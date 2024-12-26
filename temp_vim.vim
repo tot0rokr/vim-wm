@@ -56,7 +56,7 @@ function! <SID>YankWindow(winnr)
     let s:yank_pos = <SID>GetCursorPos(win_getid(s:yank_winnr))
 endfunction
 
-function! <SID>DeleteWindow()
+function! <SID>CloseWindow()
     call <SID>YankWindow(0)
     close
 endfunction
@@ -126,7 +126,7 @@ function! <SID>GetSingleChar()
     return l:ch
 endfunction
 
-function! <SID>SwapWindows()
+function! <SID>MoveSwap()
     " 현재 탭의 모든 창 정보 백업
     let l:curwindow = winnr()
     let l:orig_bufs = []
@@ -402,43 +402,51 @@ command! PrintIDs call <SID>PrintWinIDs()
 
 " Key Mapping
 " ==================================================================================================
-nnoremap <silent> <Plug> :call <SID>DeleteWindow()<CR>
-nnoremap <silent> <Plug> :call <SID>YankWindow(0)<CR>
-nnoremap <silent> <Plug> :call <SID>PasteWindow('up')<CR>
-nnoremap <silent> <Plug> :call <SID>PasteWindow('down')<CR>
-nnoremap <silent> <Plug> :call <SID>PasteWindow('left')<CR>
-nnoremap <silent> <Plug> :call <SID>PasteWindow('right')<CR>
-nnoremap <silent> <Plug> :call <SID>PasteWindow('here')<CR>
-nnoremap <silent> <Plug> :call <SID>SwapWindow()<CR>
+nnoremap <silent> <Plug>WMDelete :call <SID>CloseWindow()<CR>
+nnoremap <silent> <Plug>WMYank :call <SID>YankWindow(0)<CR>
+nnoremap <silent> <Plug>WMPasteUp :call <SID>PasteWindow('up')<CR>
+nnoremap <silent> <Plug>WMPasteDown :call <SID>PasteWindow('down')<CR>
+nnoremap <silent> <Plug>WMPasteLeft :call <SID>PasteWindow('left')<CR>
+nnoremap <silent> <Plug>WMPasteRight :call <SID>PasteWindow('right')<CR>
+nnoremap <silent> <Plug>WMPasteHere :call <SID>PasteWindow('here')<CR>
+nnoremap <silent> <Plug>WMSwap :call <SID>SwapWindow()<CR>
 
-nnoremap <silent> <Plug> :call <SID>SwapWindows()<CR>
+nnoremap <silent> <Plug>WMMoveSwap :call <SID>MoveSwap()<CR>
 
-nnoremap <silent> <Plug> :call <SID>MoveWindowAPI('right')<CR>
-nnoremap <silent> <Plug> :call <SID>MoveWindowAPI('left')<CR>
-nnoremap <silent> <Plug> :call <SID>MoveWindowAPI('down')<CR>
-nnoremap <silent> <Plug> :call <SID>MoveWindowAPI('up')<CR>
+nnoremap <silent> <Plug>WMMoveRight :call <SID>MoveWindowAPI('right')<CR>
+nnoremap <silent> <Plug>WMMoveLeft :call <SID>MoveWindowAPI('left')<CR>
+nnoremap <silent> <Plug>WMMoveDown :call <SID>MoveWindowAPI('down')<CR>
+nnoremap <silent> <Plug>WMMoveUp :call <SID>MoveWindowAPI('up')<CR>
 
-for i in range(1, 10)
-    exec 'nnoremap <C-w>'.i.' '.i.'<C-w>w'
-endfor
+if !exists('g:wm_default_mappings')
+    let g:wm_default_mappings = 1
+endif
 
-nnoremap <c-w>d :call <SID>DeleteWindow()<cr>
-nnoremap <c-w>y :call <SID>YankWindow(0)<cr>
-nnoremap <c-w>pk :call <SID>PasteWindow('up')<cr>
-nnoremap <c-w>pj :call <SID>PasteWindow('down')<cr>
-nnoremap <c-w>ph :call <SID>PasteWindow('left')<cr>
-nnoremap <c-w>pl :call <SID>PasteWindow('right')<cr>
-nnoremap <c-w>pp :call <SID>PasteWindow('here')<cr>
-nnoremap <c-w>P :call <SID>SwapWindow()<cr>
+if !exists('g:wm_numbering_mapping_windows')
+    let g:wm_numbering_mapping_windows = 1
+endif
 
-nnoremap <c-s> :call <SID>SwapWindows()<cr>
+if g:wm_default_mappings
+    nnoremap <c-w>d  <Plug>WMDelete
+    nnoremap <c-w>y  <Plug>WMYank
+    nnoremap <c-w>pk <Plug>WMPasteUp
+    nnoremap <c-w>pj <Plug>WMPasteDown
+    nnoremap <c-w>ph <Plug>WMPasteLeft
+    nnoremap <c-w>pl <Plug>WMPasteRight
+    nnoremap <c-w>pp <Plug>WMPasteHere
+    nnoremap <c-w>P  <Plug>WMSwap
 
-nnoremap <C-w>l :call <SID>MoveWindowAPI('right')<CR>
-nnoremap <C-w>h :call <SID>MoveWindowAPI('left')<CR>
-nnoremap <C-w>j :call <SID>MoveWindowAPI('down')<CR>
-nnoremap <C-w>k :call <SID>MoveWindowAPI('up')<CR>
+    nnoremap <c-s>   <Plug>WMMoveSwap
 
-for i in range(1, 10)
-    exec 'nnoremap <C-w>'.i.' '.i.'<C-w>w'
-endfor
+    nnoremap <C-w>l  <Plug>WMMoveRight
+    nnoremap <C-w>h  <Plug>WMMoveLeft
+    nnoremap <C-w>j  <Plug>WMMoveDown
+    nnoremap <C-w>k  <Plug>WMMoveUp
 
+    if g:wm_numbering_mapping_windows == 1
+        for i in range(1, 10)
+            exec 'nnoremap <C-w>'.i.' '.i.'<C-w>w'
+        endfor
+    endif
+
+endif
