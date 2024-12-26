@@ -18,14 +18,16 @@ endif
 
 function! <SID>OpenBuffer(dir, bufnr, pos)
 
-    if a:dir=='left'
-        abo vnew
-    elseif a:dir=='right'
-        bel vnew
-    elseif a:dir=='up'
-        abo new
-    elseif a:dir=='down'
-        bel new
+    if a:dir ==# 'left'
+        call <SID>NewTempBuf(2)
+    elseif a:dir ==# 'right'
+        call <SID>NewTempBuf(1)
+    elseif a:dir ==# 'up'
+        call <SID>NewTempBuf(4)
+    elseif a:dir ==# 'down'
+        call <SID>NewTempBuf(3)
+    else
+        call <SID>NewTempBuf(0)
     end
 
     silent! exec 'buffer '.a:bufnr
@@ -44,7 +46,7 @@ function! <SID>GetWinSize(winid)
 endfunction
 
 function! <SID>YankWindow(winnr)
-    if a:winnr == 0
+    if a:winnr == 0 " Current window
         let s:yank_winnr = winnr()
     else
         let s:yank_winnr = a:winnr
@@ -155,8 +157,7 @@ function! <SID>SwapWindows()
     " 모든 창에 scratch buffer를 띄우고, 단축키 출력
     for i in range(1, l:win_count)
         exec i . 'wincmd w'
-        silent! enew
-        setlocal buftype=nofile bufhidden=wipe noswapfile
+        call <SID>NewTempBuf(0)
         call setline(1, nr2char(char2nr('a') + i - 1))
         normal! gg
     endfor
@@ -195,6 +196,20 @@ function! <SID>SaveLayoutCallback(parents, node)
     return v:null
 endfunction
 
+function! <SID>NewTempBuf(direction)
+    if a:direction == 1 " Right
+        silent! belowright vnew
+    elseif a:direction == 2 " Left
+        silent! aboveleft vnew
+    elseif a:direction == 3 " Down
+        silent! belowright new
+    elseif a:direction == 4 " Up
+        silent! aboveleft new
+    else    " Here
+        silent! enew
+    endif
+    setlocal buftype=nofile bufhidden=wipe noswapfile
+endfunction
 
 function! <SID>SaveLayout(node)
     call <SID>LayoutRecursive([['root', -1]], a:node, function('<SID>SaveLayoutCallback'))
@@ -224,9 +239,9 @@ endfunction
 function! <SID>RestoreLayout(node)
     for l:i in range(0, len(a:node[1]) - 2)
         if a:node[0] ==# 'row'
-            silent! aboveleft vnew
+            call <SID>NewTempBuf(2)
         else " 'column'
-            silent! aboveleft new
+            call <SID>NewTempBuf(4)
         endif
         call <SID>RestoreNodes(a:node[1][l:i])
         silent! wincmd w
@@ -248,30 +263,22 @@ function! <SID>MoveWindow(dir, parents, node)
     if a:dir ==# 'right'
         let l:axis = 'row'
         let l:negative = 0
-        let l:main_split = 'vnew'
-        let l:cross_split = 'new'
-        let l:diagonal = ['botright', 'belowright', 'aboveleft']
+        let l:split_types = [1, 2, 2]   " [leaf, dummy, restore]
         let l:wincmd = 'l'
     elseif a:dir ==# 'left'
         let l:axis = 'row'
         let l:negative = 1
-        let l:main_split = 'vnew'
-        let l:cross_split = 'new'
-        let l:diagonal = ['topleft', 'aboveleft', 'belowright']
+        let l:split_types = [2, 2, 1]
         let l:wincmd = 'h'
     elseif a:dir ==# 'down'
         let l:axis = 'col'
         let l:negative = 0
-        let l:main_split = 'new'
-        let l:cross_split = 'vnew'
-        let l:diagonal = ['botright', 'belowright', 'aboveleft']
+        let l:split_types = [3, 4, 4]
         let l:wincmd = 'j'
     elseif a:dir ==# 'up'
         let l:axis = 'col'
         let l:negative = 1
-        let l:main_split = 'new'
-        let l:cross_split = 'vnew'
-        let l:diagonal = ['topleft', 'aboveleft', 'belowright']
+        let l:split_types = [4, 4, 3]
         let l:wincmd = 'k'
     else
         return v:null
@@ -299,7 +306,7 @@ function! <SID>MoveWindow(dir, parents, node)
 
     if l:next_node[0] == 'leaf'
         silent! exec 'wincmd '.l:wincmd
-        silent! exec l:diagonal[1]' '.l:main_split
+        call <SID>NewTempBuf(l:split_types[0])
         return win_getid()
     else " l:next_node[0] == cross axis container
         let l:stored_layout = copy(l:next_node)
@@ -308,7 +315,7 @@ function! <SID>MoveWindow(dir, parents, node)
         " Add a dummy window
         silent! call win_gotoid(a:node[1])
         silent! exec 'wincmd '.l:wincmd
-        silent! exec 'aboveleft '.l:cross_split
+        call <SID>NewTempBuf(l:split_types[1])
 
         " Removes all sub windows except target window
         call <SID>OnlyLayout(l:next_node)
@@ -317,7 +324,7 @@ function! <SID>MoveWindow(dir, parents, node)
         " TODO: Resize window size
         " resize height | vert resize width
 
-        silent! exec l:diagonal[2].' '.l:main_split
+        call <SID>NewTempBuf(l:split_types[2])
         call <SID>RestoreLayout(l:stored_layout)
 
         return l:target_winid
