@@ -133,13 +133,13 @@ function! <SID>MoveSwap()
     let l:orig_positions = []
     let l:win_count = winnr('$')
 
-    " TODO: 현재는 알파벳 개수 만큼만 지원
+    " TODO: Currently, this feature supports maximum counts of English alphabet.
     if l:win_count > char2nr('z') - char2nr('a') + 1
         echoerr 'Too many opened windows'
         return
     endif
 
-    " 모든 창을 순회하며 원래 버퍼 번호 저장
+    " Stores original buffer number while traversing all windows.
     for i in range(1, l:win_count)
         exec i . 'wincmd w'
         let l:buf = bufnr('%')
@@ -150,11 +150,11 @@ function! <SID>MoveSwap()
         endif
 
         call add(l:orig_bufs, l:buf)
-        " 현재 커서 위치 저장: [bufnum, lnum, col, off]
+        " Stores current cursor positions: [bufnum, lnum, col, off]
         call add(l:orig_positions, getpos('.'))
     endfor
 
-    " 모든 창에 scratch buffer를 띄우고, 단축키 출력
+    " Show the operation keys to each window.
     for i in range(1, l:win_count)
         exec i . 'wincmd w'
         call <SID>NewTempBuf(0)
